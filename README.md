@@ -1,7 +1,7 @@
-# `clj-time` <a href="http://travis-ci.org/#!/seancorfield/clj-time/builds"><img src="https://secure.travis-ci.org/seancorfield/clj-time.png" /></a> [![Dependency Status](https://www.versioneye.com/clojure/clj-time:clj-time/0.8.0/badge.png)](https://www.versioneye.com/clojure/clj-time:clj-time/0.8.0)
+# `clj-time` <a href="http://travis-ci.org/#!/seancorfield/clj-time/builds"><img src="https://secure.travis-ci.org/seancorfield/clj-time.png" /></a> [![Dependency Status](https://www.versioneye.com/clojure/clj-time:clj-time/0.9.0/badge.png)](https://www.versioneye.com/clojure/clj-time:clj-time/0.9.0)
 
 
-A date and time library for Clojure, wrapping the [Joda Time](http://joda-time.sourceforge.net/) library.
+A date and time library for Clojure, wrapping the [Joda Time](http://www.joda.org/joda-time/) library.
 
 ## Artifacts
 
@@ -21,7 +21,7 @@ If you are using Maven, add the following repository definition to your `pom.xml
 With Leiningen:
 
 ``` clj
-[clj-time "0.8.0"]
+[clj-time "0.9.0"]
 ```
 
 With Maven:
@@ -30,7 +30,7 @@ With Maven:
 <dependency>
   <groupId>clj-time</groupId>
   <artifactId>clj-time</artifactId>
-  <version>0.8.0</version>
+  <version>0.9.0</version>
 </dependency>
 ```
 
@@ -41,15 +41,6 @@ Please open issues against the [official clj-time repo on Github](https://github
 ## Mailing List
 
 Please ask questions on the [clj-time mailing list](http://groups.google.com/forum/#!forum/clj-time).
-
-## Recent API Changes
-
-**Note: version 0.6.0 introduces a number of API changes to improve consistency.**
-The API now uses `second`, `seconds` and `millis` where it previously
-had `sec`, `secs` and `msecs`. The older API is still present but
-marked as deprecated (and calling deprecated functions will print a
-message to the console as well returning the result). The older API
-was removed in version 0.7.0.
 
 
 ## Usage
@@ -196,7 +187,8 @@ date-time printed in their format:
 ```
 
 Remember that `mm` is minutes, `MM` is months, `ss` is seconds and
-`SS` is milliseconds.
+`SS` is milliseconds. You can find a [complete list of patterns](http://www.joda.org/joda-time/key_format.html)
+on the Joda Time website.
 
 Once you have a formatter, parsing and printing are straightforward:
 

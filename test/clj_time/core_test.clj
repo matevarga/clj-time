@@ -123,6 +123,9 @@
 (deftest test-time-zone-for-id
   (is (= utc (time-zone-for-id "UTC"))))
 
+(deftest test-available-ids
+  (is (some #{"UTC"} (available-ids))))
+
 (deftest test-to-time-zone
   (let [tz  (time-zone-for-offset 2)
         dt1 (date-time 1986 10 14 6)
@@ -312,6 +315,78 @@
     (is (= 385     (in-days p)))
     (is (= 9249    (in-hours p)))))
 
+(deftest test-period-in-millis
+  (is (= 30000      (-> 30 seconds in-millis)))
+  (is (= 240000     (-> 4 minutes in-millis)))
+  (is (= 43200000   (-> 12 hours in-millis)))
+  (is (= 777600000  (-> 9 days in-millis)))
+  (is (= 1814400000 (-> 3 weeks in-millis)))
+  (is (thrown? UnsupportedOperationException (-> 2 months in-millis)))
+  (is (thrown? UnsupportedOperationException (-> 2 years in-millis))))
+
+(deftest test-period-in-seconds
+  (is (= 30      (-> 30 seconds in-seconds)))
+  (is (= 240     (-> 4 minutes in-seconds)))
+  (is (= 43200   (-> 12 hours in-seconds)))
+  (is (= 777600  (-> 9 days in-seconds)))
+  (is (= 1814400 (-> 3 weeks in-seconds)))
+  (is (thrown? UnsupportedOperationException (-> 2 months in-seconds)))
+  (is (thrown? UnsupportedOperationException (-> 2 years in-seconds))))
+
+(deftest test-period-in-minutes
+  (is (= 0     (-> 30 seconds in-minutes)))
+  (is (= 4     (-> 4 minutes in-minutes)))
+  (is (= 720   (-> 12 hours in-minutes)))
+  (is (= 12960 (-> 9 days in-minutes)))
+  (is (= 30240 (-> 3 weeks in-minutes)))
+  (is (thrown? UnsupportedOperationException (-> 2 months in-minutes)))
+  (is (thrown? UnsupportedOperationException (-> 2 years in-minutes))))
+ 
+(deftest test-period-in-hours
+  (is (= 0   (-> 30 seconds in-hours)))
+  (is (= 0   (-> 4 minutes in-hours)))
+  (is (= 12  (-> 12 hours in-hours)))
+  (is (= 216 (-> 9 days in-hours)))
+  (is (= 504 (-> 3 weeks in-hours)))
+  (is (thrown? UnsupportedOperationException (-> 2 months in-hours)))
+  (is (thrown? UnsupportedOperationException (-> 2 years in-hours))))
+
+(deftest test-period-in-days
+  (is (= 0  (-> 30 seconds in-days)))
+  (is (= 0  (-> 4 minutes in-days)))
+  (is (= 0  (-> 12 hours in-days)))
+  (is (= 9  (-> 9 days in-days)))
+  (is (= 21 (-> 3 weeks in-days)))
+  (is (thrown? UnsupportedOperationException (-> 2 months in-days)))
+  (is (thrown? UnsupportedOperationException (-> 2 years in-days))))
+
+(deftest test-period-in-weeks
+  (is (= 0  (-> 30 seconds in-weeks)))
+  (is (= 0  (-> 4 minutes in-weeks)))
+  (is (= 0  (-> 12 hours in-weeks)))
+  (is (= 1  (-> 9 days in-weeks)))
+  (is (= 3  (-> 3 weeks in-weeks)))
+  (is (thrown? UnsupportedOperationException (-> 2 months in-weeks)))
+  (is (thrown? UnsupportedOperationException (-> 2 years in-weeks))))
+
+(deftest test-period-in-months
+  (is (thrown? UnsupportedOperationException (-> 2 seconds in-months)))
+  (is (thrown? UnsupportedOperationException (-> 2 minutes in-months)))
+  (is (thrown? UnsupportedOperationException (-> 2 hours in-months)))
+  (is (thrown? UnsupportedOperationException (-> 2 days in-months)))
+  (is (thrown? UnsupportedOperationException (-> 2 weeks in-months)))
+  (is (= 7  (-> 7 months in-months)))
+  (is (= 36 (-> 3 years in-months))))
+
+(deftest test-period-in-years
+  (is (thrown? UnsupportedOperationException (-> 2 seconds in-years)))
+  (is (thrown? UnsupportedOperationException (-> 2 minutes in-years)))
+  (is (thrown? UnsupportedOperationException (-> 2 hours in-years)))
+  (is (thrown? UnsupportedOperationException (-> 2 days in-years)))
+  (is (thrown? UnsupportedOperationException (-> 2 weeks in-years)))
+  (is (= 1 (-> 14 months in-years)))
+  (is (= 3 (-> 3 years in-years))))
+
 (deftest test-within?
   (let [d1 (date-time 1985)
         d2 (date-time 1986)
@@ -422,7 +497,10 @@
         d5 (date-time 2012 5 31)
         d6 (date-time 2012 6 30)
         d7 (date-time 2013 2 28)
-        d8 (date-time 2016 2 29)]
+        d8 (date-time 2016 2 29)
+        d9 (local-date 2014 1 31)
+        d10 (local-date 2014 1 5)
+        d11 (local-date 2014 1 29)]
     (is (= d1 (last-day-of-the-month 2012 1)))
     (is (= d1 (last-day-of-the-month (date-time 2012 1 13))))
     (is (= d2 (last-day-of-the-month 2012 2)))
@@ -432,7 +510,10 @@
     (is (= d5 (last-day-of-the-month 2012 5)))
     (is (= d6 (last-day-of-the-month 2012 6)))
     (is (= d7 (last-day-of-the-month 2013 2)))
-    (is (= d8 (last-day-of-the-month 2016 2)))))
+    (is (= d8 (last-day-of-the-month 2016 2)))
+    (is (= d9 (last-day-of-the-month d9)))
+    (is (= d9 (last-day-of-the-month d10)))
+    (is (= d9 (last-day-of-the-month d11)))))
 
 (deftest test-number-of-days-in-the-month
   (is (= 31 (number-of-days-in-the-month 2012 1)))
@@ -455,7 +536,10 @@
         d5 (date-time 2012 5 1)
         d6 (date-time 2012 6 1)
         d7 (date-time 2013 2 1)
-        d8 (date-time 2016 2 1)]
+        d8 (date-time 2016 2 1)
+        d9 (local-date 2014 1 1)
+        d10 (local-date 2014 1 2)
+        d11 (local-date 2014 1 31)]
     (is (= d1 (first-day-of-the-month 2012 1)))
     (is (= d1 (first-day-of-the-month (date-time 2012 1 24))))
     (is (= d2 (first-day-of-the-month 2012 2)))
@@ -465,7 +549,10 @@
     (is (= d5 (first-day-of-the-month 2012 5)))
     (is (= d6 (first-day-of-the-month 2012 6)))
     (is (= d7 (first-day-of-the-month 2013 2)))
-    (is (= d8 (first-day-of-the-month 2016 2)))))
+    (is (= d8 (first-day-of-the-month 2016 2)))
+    (is (= d9 (first-day-of-the-month d9)))
+    (is (= d9 (first-day-of-the-month d10)))
+    (is (= d9 (first-day-of-the-month d11)))))
 
 
 (deftest test-today-at

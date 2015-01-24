@@ -107,7 +107,20 @@
   (plus- [this ^ReadablePeriod period]
     "Returns a new date/time corresponding to the given date/time moved forwards by the given Period(s).")
   (minus- [this ^ReadablePeriod period]
-    "Returns a new date/time corresponding to the given date/time moved backwards by the given Period(s)."))
+    "Returns a new date/time corresponding to the given date/time moved backwards by the given Period(s).")
+  (first-day-of-the-month- [this] "Returns the first day of the month")
+  (last-day-of-the-month- [this] "Returns the last day of the month"))
+
+(defprotocol InTimeUnitProtocol
+  "Interface for in-<time unit> functions"
+  (in-millis [this] "Return the time in milliseconds.")
+  (in-seconds [this] "Return the time in seconds.")
+  (in-minutes [this] "Return the time in minutes.")
+  (in-hours [this] "Return the time in hours.")
+  (in-days [this] "Return the time in days.")
+  (in-weeks [this] "Return the time in weeks")
+  (in-months [this] "Return the time in months")
+  (in-years [this] "Return the time in years"))
 
 (extend-protocol DateTimeProtocol
   org.joda.time.DateTime
@@ -127,6 +140,10 @@
   (before? [this ^ReadableInstant that] (.isBefore this that))
   (plus- [this ^ReadablePeriod period] (.plus this period))
   (minus- [this ^ReadablePeriod period] (.minus this period))
+  (first-day-of-the-month- [this]
+    (.. ^DateTime this dayOfMonth withMinimumValue))
+  (last-day-of-the-month- [this]
+     (.. ^DateTime this dayOfMonth withMaximumValue))
 
   org.joda.time.DateMidnight
   (year [this] (.getYear this))
@@ -145,6 +162,10 @@
   (before? [this ^ReadableInstant that] (.isBefore this that))
   (plus- [this ^ReadablePeriod period] (.plus this period))
   (minus- [this ^ReadablePeriod period] (.minus this period))
+  (first-day-of-the-month- [this]
+    (.. ^DateMidnight this dayOfMonth withMinimumValue))
+  (last-day-of-the-month- [this]
+     (.. ^DateMidnight this dayOfMonth withMaximumValue))
 
   org.joda.time.LocalDateTime
   (year [this] (.getYear this))
@@ -163,6 +184,10 @@
   (before? [this ^ReadablePartial that] (.isBefore this that))
   (plus- [this ^ReadablePeriod period] (.plus this period))
   (minus- [this ^ReadablePeriod period] (.minus this period))
+  (first-day-of-the-month- [this]
+    (.. ^LocalDateTime this dayOfMonth withMinimumValue))
+  (last-day-of-the-month- [this]
+     (.. ^LocalDateTime this dayOfMonth withMaximumValue))
 
   org.joda.time.YearMonth
   (year [this] (.getYear this))
@@ -181,6 +206,10 @@
   (before? [this ^ReadablePartial that] (.isBefore this that))
   (plus- [this ^ReadablePeriod period] (.plus this period))
   (minus- [this ^ReadablePeriod period] (.minus this period))
+  (first-day-of-the-month- [this]
+    (.. ^LocalDate this dayOfMonth withMinimumValue))
+  (last-day-of-the-month- [this]
+     (.. ^LocalDate this dayOfMonth withMaximumValue))
 
   org.joda.time.LocalTime
   (hour [this] (.getHourOfDay this))
@@ -328,6 +357,11 @@
   [^String id]
   (DateTimeZone/forID id))
 
+(defn available-ids
+  "Returns a set of available IDs for use with time-zone-for-id."
+  []
+  (DateTimeZone/getAvailableIDs))
+
 (defn default-time-zone
   "Returns the default DateTimeZone for the current environment."
   []
@@ -405,6 +439,52 @@
   ([^Integer n]
      (Seconds/seconds n)))
 
+(extend-protocol InTimeUnitProtocol
+  org.joda.time.Interval 
+  (in-millis [this] (.toDurationMillis this))
+  (in-seconds [this] (.getSeconds (.toPeriod this (seconds))))
+  (in-minutes [this] (.getMinutes (.toPeriod this (minutes))))
+  (in-hours [this] (.getHours (.toPeriod this (hours))))
+  (in-days [this] (.getDays (.toPeriod this (days))))
+  (in-weeks [this] (.getWeeks (.toPeriod this (weeks))))
+  (in-months [this] (.getMonths (.toPeriod this (months))))
+  (in-years [this] (.getYears (.toPeriod this (years))))
+  org.joda.time.ReadablePeriod
+  (in-millis [this] (-> this .toPeriod .toStandardDuration .getMillis))
+  (in-seconds [this] (-> this .toPeriod .toStandardSeconds .getSeconds))
+  (in-minutes [this] (-> this .toPeriod .toStandardMinutes .getMinutes))
+  (in-hours [this] (-> this .toPeriod .toStandardHours .getHours))
+  (in-days [this] (-> this .toPeriod .toStandardDays .getDays))
+  (in-weeks [this] (-> this .toPeriod .toStandardWeeks .getWeeks))
+  (in-months [this] 
+    (condp instance? this
+      org.joda.time.Months (.getMonths ^org.joda.time.Months this)
+      org.joda.time.Years (* 12 (.getYears ^org.joda.time.Years this))
+      (throw
+        (UnsupportedOperationException.
+          "Cannot convert to Months because months vary in length."))))
+  (in-years [this]
+    (condp instance? this
+      org.joda.time.Months (int (/ (.getMonths ^org.joda.time.Months this) 12))
+      org.joda.time.Years (.getYears ^org.joda.time.Years this)
+      (throw
+        (UnsupportedOperationException.
+          "Cannot convert to Years because years vary in length.")))))
+
+(defn in-msecs
+  "DEPRECATED: Returns the number of milliseconds in the given Interval."
+  {:deprecated "0.6.0"}
+  [^Interval in]
+  (deprecated "in-msecs has been deprecated in favor of in-millis")
+  (in-millis in))
+ 
+(defn in-secs
+  "DEPRECATED: Returns the number of standard seconds in the given Interval."
+  {:deprecated "0.6.0"}
+  [^Interval in]
+  (deprecated "in-secs has been deprecated in favor of in-seconds")
+  (in-seconds in))
+ 
 (defn secs
   "DEPRECATED"
   {:deprecated "0.6.0"}
@@ -494,59 +574,6 @@
   [^Interval in & by]
   (.withEnd in (apply plus (end in) by)))
 
-(defn in-millis
-  "Returns the number of milliseconds in the given Interval."
-  [^Interval in]
-  (.toDurationMillis in))
-
-(defn in-msecs
-  "DEPRECATED: Returns the number of milliseconds in the given Interval."
-  {:deprecated "0.6.0"}
-  [^Interval in]
-  (deprecated "in-msecs has been deprecated in favor of in-millis")
-  (in-millis in))
-
-(defn in-seconds
-  "Returns the number of standard seconds in the given Interval."
-  [^Interval in]
-  (.getSeconds (.toPeriod in (seconds))))
-
-(defn in-secs
-  "DEPRECATED: Returns the number of standard seconds in the given Interval."
-  {:deprecated "0.6.0"}
-  [^Interval in]
-  (deprecated "in-secs has been deprecated in favor of in-seconds")
-  (in-seconds in))
-
-(defn in-minutes
-  "Returns the number of standard minutes in the given Interval."
-  [^Interval in]
-  (.getMinutes (.toPeriod in (minutes))))
-
-(defn in-hours
-  "Returns the number of standard hours in the given Interval."
-  [^Interval in]
-  (.getHours (.toPeriod in (hours))))
-
-(defn in-days
-  "Returns the number of standard days in the given Interval."
-  [^Interval in]
-  (.getDays (.toPeriod in (days))))
-
-(defn in-weeks
-  "Returns the number of standard weeks in the given Interval."
-  [^Interval in]
-  (.getWeeks (.toPeriod in (weeks))))
-
-(defn in-months
-  "Returns the number of standard months in the given Interval."
-  [^Interval in]
-  (.getMonths (.toPeriod in (months))))
-
-(defn in-years
-  "Returns the number of standard years in the given Interval."
-  [^Interval in]
-  (.getYears (.toPeriod in (years))))
 
 (defn within?
   "With 2 arguments: Returns true if the given Interval contains the given
@@ -627,26 +654,23 @@
   [d]
   (in-minutes (interval d (now))))
 
-
-(defn ^DateTime last-day-of-the-month
-  ([^DateTime dt]
-     (last-day-of-the-month (.getYear dt) (.getMonthOfYear dt)))
+(defn first-day-of-the-month
   ([^long year ^long month]
-     (.. ^DateTime (date-time year month) dayOfMonth withMaximumValue)))
+     (first-day-of-the-month- (date-time year month)))
+  ([dt]
+     (first-day-of-the-month- dt)))
+
+(defn last-day-of-the-month
+  ([^long year ^long month]
+     (last-day-of-the-month- (date-time year month)))
+  ([dt]
+     (last-day-of-the-month- dt)))
 
 (defn number-of-days-in-the-month
   (^long [^DateTime dt]
-         (number-of-days-in-the-month (.getYear dt) (.getMonthOfYear dt)))
+         (day (last-day-of-the-month- dt)))
   (^long [^long year ^long month]
-         (let [^DateTime dt (last-day-of-the-month year month)]
-           (.getDayOfMonth dt))))
-
-(defn ^DateTime first-day-of-the-month
-  ([^DateTime dt]
-     (first-day-of-the-month (.getYear dt) (.getMonthOfYear dt)))
-  ([^long year ^long month]
-     (.. ^DateTime (date-time year month) dayOfMonth withMinimumValue)))
-
+         (day (last-day-of-the-month- (date-time year month)))))
 
 (defn ^DateTime today-at
   ([^long hours ^long minutes ^long seconds ^long millis]
